@@ -18,8 +18,8 @@
   --stage:#152238; --stage-ink:#F5F7FA;
   --hx1:#F6C344; --hx1-ink:#3D2A00; --hx2:#E3A008; --hx2-ink:#2B1C00; --hx3:#F4D88A; --hx3-ink:#4A3500; --hx4:#C97D10; --hx4-ink:#FFF8E8; --hx5:#152238; --hx5-ink:#F6CE6E;
   --shadow:0 1px 2px rgba(21,34,56,.06),0 4px 16px rgba(21,34,56,.06);
-  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
-  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-display:Arial,"Helvetica Neue",Helvetica,sans-serif;
+  --f-body:Arial,"Helvetica Neue",Helvetica,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --r:10px;
 }
@@ -59,6 +59,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .small{font-size:.85rem}
 .mono{font-family:var(--f-mono)}
 .eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;font-weight:700;color:var(--muted)}
+.sec .eyebrow::before,.sec-head .eyebrow::before{content:"";display:inline-block;width:9px;height:10px;margin-right:8px;vertical-align:-1px;background:var(--honey);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
 
 /* header */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
@@ -102,7 +103,7 @@ textarea.inp{resize:vertical;min-height:70px}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .pad{padding:18px}
-.stack{display:grid;gap:14px}
+.stack{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .stack.tight{gap:8px}
 
 /* home */
@@ -139,11 +140,13 @@ textarea.inp{resize:vertical;min-height:70px}
 .lede-dark{font-size:1.06rem;color:var(--muted);max-width:60ch}
 .hero-band{background:var(--stage) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23FFFFFF' stroke-opacity='.07' stroke-width='1.2'/%3E%3C/svg%3E") repeat;color:var(--stage-ink);position:relative;overflow:hidden}
 .hero-band::after{content:"";position:absolute;inset:auto -10% -40% 40%;height:80%;background:radial-gradient(closest-side,color-mix(in srgb,var(--honey) 28%,transparent),transparent);pointer-events:none}
-.hero2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(28px,5vw,64px);align-items:center;padding-block:clamp(48px,8vw,104px);position:relative;z-index:1}
-.hero-copy{display:grid;gap:20px;align-content:center}
+.hero2{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:clamp(28px,5vw,64px);align-items:center;padding-block:clamp(48px,8vw,104px);position:relative;z-index:1}
+.hero-copy{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-content:center;min-width:0}
+.hero-copy .kicker{max-width:100%;white-space:normal}
+.hero-copy,.hero-copy h1,.hero-copy .btn,.hero-copy .kicker{font-family:Arial,"Helvetica Neue",Helvetica,sans-serif}
 .kicker{display:inline-flex;align-items:center;gap:8px;justify-self:start;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#F6CE6E;background:#ffffff10;border:1px solid #ffffff22;padding:5px 12px;border-radius:999px}
 .kicker i{width:8px;height:9px;background:var(--honey);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
-.h-hero{font-size:clamp(2.3rem,5.6vw,4.3rem);font-weight:800;letter-spacing:-.035em;line-height:1.02;color:#fff}
+.h-hero{font-size:clamp(2.1rem,4.6vw,3.5rem);font-weight:800;letter-spacing:-.03em;line-height:1.04;color:#fff}
 .h-hero .hl{color:var(--honey);background:linear-gradient(transparent 82%,color-mix(in srgb,var(--honey) 35%,transparent) 82%)}
 .lede{font-size:clamp(1.02rem,1.5vw,1.18rem);color:#C9D3E2;max-width:56ch}
 .cta-row{gap:12px}
@@ -157,19 +160,37 @@ textarea.inp{resize:vertical;min-height:70px}
 .proofs{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-wrap:wrap;gap:8px 20px;color:#C9D3E2;font-size:.92rem}
 .proofs li{display:flex;gap:6px;align-items:center}
 .proofs svg{width:16px;height:16px;color:var(--honey)}
-.hero-side{position:relative;display:grid}
-.hexfloat span{position:absolute;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:var(--honey);animation:floaty 7s ease-in-out infinite}
-.hexfloat .h1{width:120px;height:104px;top:-56px;right:-28px;opacity:.9}
-.hexfloat .h2{width:64px;height:56px;top:24px;right:96px;opacity:.35;animation-delay:-2s}
-.hexfloat .h3{width:90px;height:78px;bottom:-40px;left:-36px;opacity:.55;animation-delay:-4s;background:#F6CE6E}
-.hexfloat .h4{width:44px;height:38px;bottom:30px;right:-14px;opacity:.4;animation-delay:-1s}
-@keyframes floaty{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(6deg)}}
-.join2{position:relative;z-index:1;display:grid;gap:14px;padding:clamp(20px,3vw,32px);border-radius:18px;background:color-mix(in srgb,var(--stage) 70%,#ffffff 8%);border:1px solid #ffffff24;box-shadow:0 30px 60px -20px #00000080;backdrop-filter:blur(8px)}
-.join2 h2{color:#fff;font-size:1.5rem}
-.join2 .hint{color:#C8D2E0;font-size:.9rem}
-.join2 .err{color:#FFB38A;font-size:.9rem;min-height:1.2em}
-.join2 .code-in{font-family:var(--f-mono);font-size:clamp(1.5rem,3vw,2rem);letter-spacing:.35em;text-transform:uppercase;text-align:center;background:#00000033;border:2px solid #ffffff30;color:#fff;border-radius:12px;padding:12px;width:100%}
-.join2 .code-in:focus{border-color:var(--honey);outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--honey) 25%,transparent)}
+.join3{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-width:440px;margin-top:6px;padding-top:22px;border-top:1px solid #ffffff22}
+.join3 label{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#C8D2E0}
+.join3-row{display:flex;gap:8px}
+.join3 .code-in{flex:1;min-width:0;font-family:var(--f-mono);font-size:1.25rem;letter-spacing:.3em;text-transform:uppercase;text-align:center;background:#ffffff0d;border:1.5px solid #ffffff30;color:#fff;border-radius:10px;padding:10px 12px}
+.join3 .code-in::placeholder{color:#ffffff55}
+.join3 .code-in:focus{border-color:var(--honey);outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--honey) 25%,transparent)}
+.join3 .err{color:#FFB38A;font-size:.88rem;min-height:1.2em}
+.hero-comb{display:grid;place-items:center;position:relative}
+.hero-comb::before{content:"";position:absolute;width:120%;aspect-ratio:1;max-width:620px;background:radial-gradient(closest-side,color-mix(in srgb,var(--honey) 26%,transparent),transparent 70%);pointer-events:none}
+.comb{--s:108px;--m:5px;position:relative;display:grid;justify-items:center;filter:drop-shadow(0 18px 28px rgba(0,0,0,.4))}
+.comb-row{display:flex;gap:calc(var(--m) * 2)}
+.comb-row.off{padding-left:calc(var(--s) / 2 + var(--m))}
+.comb-row+.comb-row{margin-top:calc(var(--m) * 1.4 - var(--s) * 0.2885)}
+.comb .hex b{font-size:.74rem}
+.comb .hex svg{width:24px;height:24px}
+.comb .hex .hx{padding:0 9px;gap:4px}
+.comb .ghost{cursor:default;background:#ffffff1c}
+.comb .ghost::before{content:"";position:absolute;inset:2px;clip-path:polygon(0% 25%,0% 75%,50% 100%,100% 75%,100% 25%,50% 0%);background:var(--stage)}
+.comb .ghost:hover{transform:none;filter:none}
+.comb .heart{cursor:default;background:var(--honey);color:#fff}
+.comb .heart .hx{position:absolute;inset:3px;height:auto;clip-path:polygon(0% 25%,0% 75%,50% 100%,100% 75%,100% 25%,50% 0%);background:radial-gradient(80% 60% at 50% 30%,#22355C,#0F1A2E)}
+.comb .heart svg{width:46px;height:46px}
+.comb .heart b{font-size:.9rem;color:#fff}
+.comb .heart small{font-size:.6rem;color:#F6CE6E;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.comb .heart:hover{transform:none;filter:none}
+.comb.intro .hex{animation:cellIn .55s cubic-bezier(.2,.8,.3,1.15) both;animation-delay:calc(var(--i) * 70ms + 120ms)}
+@keyframes cellIn{from{opacity:0;transform:scale(.6) translateY(12px)}to{opacity:1;transform:none}}
+@media (max-width:1100px){.comb{--s:92px}.comb .hex b{font-size:.66rem}}
+@media (max-width:900px){.comb{--s:104px}.comb .hex b{font-size:.72rem}}
+@media (max-width:600px){.comb{--s:62px;--m:3px}.comb .hex b{display:none}.comb .hex svg{width:22px;height:22px}.comb .heart svg{width:30px;height:30px}.comb .heart small{display:none}.comb .hex .hx{padding:0;gap:0}.join3 .code-in{font-size:1.05rem;letter-spacing:.2em}}
+@media (prefers-reduced-motion:reduce){.comb.intro .hex{animation:none}}
 .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;counter-reset:none}
 .steps li{display:grid;gap:10px;align-content:start;padding:24px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .steps p{color:var(--muted)}
@@ -205,16 +226,16 @@ textarea.inp{resize:vertical;min-height:70px}
 .sess{position:relative;overflow:hidden}
 .sess::before{content:"";position:absolute;top:-18px;right:-14px;width:64px;height:56px;background:var(--honey-soft);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
 .sess>*{position:relative}
-@media (max-width:900px){.hero2,.split{grid-template-columns:1fr}.steps,.feats{grid-template-columns:1fr 1fr}.hexfloat .h1{right:0}}
-@media (max-width:600px){.steps,.feats{grid-template-columns:1fr}.hexfloat{display:none}.proj-body .p-body.withimg{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){.hexfloat span,.proj-live i{animation:none}}
+@media (max-width:900px){.hero2,.split{grid-template-columns:minmax(0,1fr)}.steps,.feats{grid-template-columns:1fr 1fr}}
+@media (max-width:600px){.steps,.feats{grid-template-columns:1fr}.proj-body .p-body.withimg{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.proj-live i{animation:none}}
 /* honeycomb */
 .hive-wrap{display:grid;gap:12px}
 .hive{--s:132px;--m:5px;display:grid;justify-content:start}
 .hrow{display:flex;gap:calc(var(--m) * 2);margin-top:calc(var(--m) * 1.4 - var(--s) * 0.2885)}
 .hrow:first-child{margin-top:0}
 .hrow.off{padding-left:calc(var(--s) / 2 + var(--m))}
-.hex{flex:none;width:var(--s);height:calc(var(--s) * 1.1547);clip-path:polygon(0% 25%,0% 75%,50% 100%,100% 75%,100% 25%,50% 0%);border:0;padding:0;cursor:pointer;background:var(--hx-bg);color:var(--hx-ink);transition:transform .18s ease,filter .18s ease}
+.hex{position:relative;flex:none;width:var(--s);height:calc(var(--s) * 1.1547);clip-path:polygon(0% 25%,0% 75%,50% 100%,100% 75%,100% 25%,50% 0%);border:0;padding:0;cursor:pointer;background:var(--hx-bg);color:var(--hx-ink);transition:transform .18s ease,filter .18s ease}
 .hex .hx{display:grid;justify-items:center;align-content:center;gap:6px;height:100%;padding:0 14px;text-align:center}
 .hex svg{width:28px;height:28px}
 .hex b{font-family:var(--f-display);font-size:.86rem;line-height:1.12;font-weight:700}
@@ -233,8 +254,8 @@ textarea.inp{resize:vertical;min-height:70px}
 
 /* editor */
 .editor{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;padding-block:18px 60px;max-width:1280px;margin:0 auto}
-.side{display:grid;gap:14px;align-content:start}
-.qlist{display:grid;gap:4px;padding:8px}
+.side{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-content:start;min-width:0}
+.qlist{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:8px}
 .qitem{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent;background:none;text-align:left;width:100%}
 .qitem:hover{background:var(--sunk)}
 .qitem.sel{background:var(--honey-soft);border-color:color-mix(in srgb,var(--honey) 50%,transparent)}
@@ -242,7 +263,7 @@ textarea.inp{resize:vertical;min-height:70px}
 .qitem .hexico{width:28px;height:28px}
 .qitem .hexico svg{width:15px;height:15px}
 .qitem .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.9rem}
-.qform{display:grid;gap:16px;align-content:start}
+.qform{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-content:start;min-width:0}
 .qform-h{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .opt-row{display:flex;gap:8px;align-items:center}
 .opt-row .inp{flex:1}
@@ -255,7 +276,7 @@ textarea.inp{resize:vertical;min-height:70px}
 .zone{position:absolute;border:3px solid var(--ok);background:color-mix(in srgb,var(--ok) 22%,transparent);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
 .pin{position:absolute;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:var(--honey);color:#1B1300;font-weight:800;font-family:var(--f-mono);display:grid;place-items:center;font-size:.85rem;box-shadow:0 0 0 3px #fff8;pointer-events:none}
 .save-state{font-size:.8rem;color:var(--muted)}
-.ai-box{border:1px solid color-mix(in srgb,var(--honey) 55%,var(--line));background:linear-gradient(0deg,var(--surface),var(--honey-soft));border-radius:var(--r)}
+
 
 /* results */
 .bars{display:grid;gap:10px}
@@ -391,8 +412,8 @@ body{margin:0}
 
 <header class="top"><div class="in wrap">
   <button class="brand" id="brand" type="button" aria-label="Accueil">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 3h14l7 13-7 13H9L2 16z" fill="var(--honey)"/><path d="M12 10h8l4 6-4 6h-8l-4-6z" fill="none" stroke="#1B1300" stroke-width="2"/><circle cx="16" cy="16" r="2.2" fill="#1B1300"/></svg>
-    Ruche
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 3h14l7 13-7 13H9L2 16z" fill="var(--honey)"/><path d="M12 10h8l4 6-4 6h-8l-4-6z" fill="none" stroke="#1B1300" stroke-width="2"/><circle cx="16" cy="16" r="2.2" fill="#1B1300"/></svg>
+    La Ruche
   </button>
   <span class="pill" id="modePill" hidden></span>
   <span class="sp"></span>
@@ -464,6 +485,7 @@ const P = {
   download:'<path d="M12 4v11M7 10l5 5 5-5M4 20h16"/>', expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', thumb:'<path d="M7 11v9H4v-9zM7 11l4-7a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7"/>',
   hive:'<path d="M8 3h8l4 7-4 7H8l-4-7z"/><path d="M12 17v4M9 21h6"/>'
 };
+const LOGO = `<svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 3h14l7 13-7 13H9L2 16z" fill="var(--honey)"/><path d="M12 10h8l4 6-4 6h-8l-4-6z" fill="none" stroke="#1B1300" stroke-width="2"/><circle cx="16" cy="16" r="2.2" fill="#1B1300"/></svg>`;
 const ico = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ""}</svg>`;
 
 /* ---------- activity types ---------- */
@@ -581,14 +603,14 @@ function aggregate(q, entries){
   const E = entries.filter(e => hasAnswer(q, e.v)); const n = E.length; const agg = {n};
   switch(q.type){
     case "qcm": case "poll": agg.counts = q.options.map((_, i) => E.filter(e => e.v.includes(i)).length); if (q.type === "qcm") agg.ok = E.filter(e => score(q, e.v) === 1).length; break;
-    case "cloud": { const m = {}; const disp = {}; for (const e of E) for (const w of e.v) { const k = norm(w); if (!k) continue; m[k] = (m[k] || 0) + 1; disp[k] = disp[k] || String(w).trim(); } agg.words = Object.keys(m).map(k => [disp[k], m[k], k]).sort((a, b) => b[1] - a[1]).slice(0, 80); break; }
+    case "cloud": { const m = {}; const disp = {}; for (const e of E) for (const w of e.v) { const k = norm(w); if (!k) continue; m[k] = (m[k] || 0) + 1; disp[k] = disp[k] || String(w).trim(); } agg.words = Object.keys(m).map(k => ({t: disp[k], c: m[k], k})).sort((a, b) => b.c - a.c).slice(0, 80); break; }
     case "open": agg.posts = E.map(e => ({k: e.uid, text: String(e.v).slice(0, 600), nick: e.nick, t: e.t})).sort((a, b) => a.t - b.t); break;
     case "rating": agg.crit = q.criteria.map((_, ci) => { const vals = E.map(e => Number(e.v[ci])).filter(x => isFinite(x) && x >= q.min); const dist = []; for (let x = q.min; x <= q.max; x++) dist.push(vals.filter(v => v === x).length); return {avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0, n: vals.length, dist}; }); break;
     case "number": { const vals = E.map(e => Number(e.v)).filter(isFinite).sort((a, b) => a - b); agg.vals = vals.slice(0, 400); agg.ok = E.filter(e => score(q, e.v) === 1).length; agg.mean = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0; agg.median = vals.length ? (vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2) : 0; break; }
     case "sort": agg.avgPos = q.items.map((_, it) => { const ps = E.map(e => e.v.indexOf(it)).filter(p => p >= 0); return ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0; }); agg.full = E.filter(e => score(q, e.v) === 1).length; agg.avg = n ? E.reduce((a, e) => a + score(q, e.v), 0) / n : 0; break;
     case "match": agg.per = q.pairs.map((_, i) => E.filter(e => e.v[i] === i).length); agg.full = E.filter(e => score(q, e.v) === 1).length; break;
     case "label": agg.per = q.pins.map((_, i) => E.filter(e => e.v[i] === i).length); agg.full = E.filter(e => score(q, e.v) === 1).length; break;
-    case "blanks": { const {answers} = parseBlanks(q.text); agg.per = answers.map((alts, i) => { const tops = {}; let ok = 0; for (const e of E) { const g = String((e.v || [])[i] || "").trim(); if (alts.some(a => norm(a) === norm(g))) ok++; else if (g) tops[norm(g)] = (tops[norm(g)] || 0) + 1; } return {ok, wrong: Object.entries(tops).sort((a, b) => b[1] - a[1]).slice(0, 3)}; }); agg.full = E.filter(e => score(q, e.v) === 1).length; break; }
+    case "blanks": { const {answers} = parseBlanks(q.text); agg.per = answers.map((alts, i) => { const tops = {}; let ok = 0; for (const e of E) { const g = String((e.v || [])[i] || "").trim(); if (alts.some(a => norm(a) === norm(g))) ok++; else if (g) tops[norm(g)] = (tops[norm(g)] || 0) + 1; } return {ok, wrong: Object.entries(tops).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, c]) => ({t, c}))}; }); agg.full = E.filter(e => score(q, e.v) === 1).length; break; }
     case "prio": agg.sums = q.options.map((_, i) => E.reduce((a, e) => a + (Number(e.v[i]) || 0), 0)); break;
     case "image": agg.pts = E.slice(0, 400).map(e => ({x: e.v.x, y: e.v.y, ok: score(q, e.v) === 1})); agg.ok = E.filter(e => score(q, e.v) === 1).length; break;
     case "brain": { const m = {}; for (const e of E) { for (const idea of (e.v.ideas || [])) { const k = norm(idea); if (!k) continue; m[k] = m[k] || {text: String(idea).trim(), k, authors: 0, votes: 0}; m[k].authors++; } } for (const e of E) for (const k of (e.v.votes || [])) if (m[k]) m[k].votes++; agg.ideas = Object.values(m).sort((a, b) => (b.votes - a.votes) || (b.authors - a.authors)).slice(0, 120); agg.n = E.filter(e => (e.v.ideas || []).length).length; break; }
@@ -617,8 +639,8 @@ function renderResults(q, agg, o = {}){
       return head + barsHTML(rows, n, {keys:true, scaleToTotal:true, dimWrong: sc && q.type === "qcm"});
     }
     case "cloud": {
-      const mx = agg.words.length ? agg.words[0][1] : 1;
-      return `<div class="cloud" aria-label="Nuage de mots">${agg.words.map((w, i) => `<span style="font-size:${(0.95 + 2.8 * Math.sqrt(w[1] / mx)).toFixed(2)}rem;color:${col(hashStr(w[2]))}" title="${w[1]} fois">${esc(w[0])}</span>`).join("")}</div>`;
+      const mx = agg.words.length ? agg.words[0].c : 1;
+      return `<div class="cloud" aria-label="Nuage de mots">${agg.words.map((w, i) => `<span style="font-size:${(0.95 + 2.8 * Math.sqrt(w.c / mx)).toFixed(2)}rem;color:${col(hashStr(w.k))}" title="${w.c} fois">${esc(w.t)}</span>`).join("")}</div>`;
     }
     case "open": {
       const hid = o.hidden || {}; const visible = agg.posts.filter(p => o.moderate || !hid[q.id + ":" + p.k]);
@@ -646,7 +668,7 @@ function renderResults(q, agg, o = {}){
     case "match": return `<div class="stat-row"><div class="stat"><b>${pct(agg.full, n)} %</b><span>tout juste</span></div></div>` + barsHTML(q.pairs.map((p, i) => ({label: sc ? `${p.l} → ${p.r}` : p.l, v: agg.per[i], color: "var(--ok)"})), n, {scaleToTotal:true});
     case "label": return `<div class="p-body withimg">${imgBox(q, q.pins.map((p, i) => `<span class="pin" style="left:${p.x}%;top:${p.y}%">${i + 1}</span>`).join(""))}<div class="stack"><div class="stat-row"><div class="stat"><b>${pct(agg.full, n)} %</b><span>tout juste</span></div></div>${barsHTML(q.pins.map((p, i) => ({label: `${i + 1}. ${sc ? p.t : "Repère " + (i + 1)}`, v: agg.per[i], color: "var(--ok)"})), n, {scaleToTotal:true})}</div></div>`;
     case "blanks": { const {answers} = parseBlanks(q.text);
-      return `<div class="stat-row"><div class="stat"><b>${pct(agg.full, n)} %</b><span>texte entièrement juste</span></div></div>` + barsHTML(answers.map((a, i) => ({label: `Trou ${i + 1}${sc ? " : " + a[0] : ""}${agg.per[i].wrong.length ? " — erreurs : " + agg.per[i].wrong.map(w => `« ${w[0]} » (${w[1]})`).join(", ") : ""}`, v: agg.per[i].ok, color: "var(--ok)"})), n, {scaleToTotal:true}); }
+      return `<div class="stat-row"><div class="stat"><b>${pct(agg.full, n)} %</b><span>texte entièrement juste</span></div></div>` + barsHTML(answers.map((a, i) => ({label: `Trou ${i + 1}${sc ? " : " + a[0] : ""}${agg.per[i].wrong.length ? " — erreurs : " + agg.per[i].wrong.map(w => `« ${w.t} » (${w.c})`).join(", ") : ""}`, v: agg.per[i].ok, color: "var(--ok)"})), n, {scaleToTotal:true}); }
     case "prio": { const tot = agg.sums.reduce((a, b) => a + b, 0) || 1; const rows = q.options.map((t, i) => ({label: t, v: agg.sums[i], disp: `${agg.sums[i]} pts · ${pct(agg.sums[i], tot)} %`})).sort((a, b) => b.v - a.v);
       return barsHTML(rows, tot, {raw:true, keys:true}); }
     case "image": return `<div class="p-body withimg">${imgBox(q, (sc ? `<span class="zone" style="left:${q.zone.x}%;top:${q.zone.y}%;width:${q.zone.r * 2}%;aspect-ratio:1"></span>` : "") + agg.pts.map(p => `<span class="dot ${sc && p.ok ? "okd" : ""}" style="left:${p.x}%;top:${p.y}%"></span>`).join(""))}<div class="stat-row" style="align-content:start">${sc ? `<div class="stat"><b>${pct(agg.ok, n)} %</b><span>dans la bonne zone</span></div>` : ""}<div class="stat"><b>${n}</b><span>clics</span></div></div></div>`;
@@ -718,7 +740,7 @@ function simulate(q, i){
 }
 
 /* ---------- store: shared db when available, otherwise a local demo ---------- */
-const Store = {mode:"loading", uid:null, isEditor:false, db:null, assets:null, sample:null, downloads:null};
+const Store = {mode:"loading", uid:null, isEditor:false, db:null, assets:null, downloads:null};
 const Bus = {sessions:[], sess:{}, answers:[], mine:null, qa:[], loaded:{}};
 const subs = [];
 function makeQueue(){ let p = Promise.resolve(); return fn => (p = p.then(fn, fn)); }
@@ -835,6 +857,19 @@ function homeDemoHTML(){
       <div class="proj-body"><span class="eyebrow">${TYPES[q.type].label}</span><h3 class="proj-q">${esc(q.title)}</h3>${q.type === "sct" ? `<p class="muted small">${esc(q.hypo)} — ${esc(q.info)}</p>` : ""}${renderResults(q, aggregate(q, sims), {showCorrect: true})}</div></div>
     <p class="small muted">Exemple de résultats avec 18 participants fictifs.</p>`;
 }
+function combHTML(){
+  const intro = !Home.introDone; Home.introDone = true; let n = 0;
+  const cell = k => { const t = TYPES[k]; return `<button class="hex g-${t.g}" style="--i:${n++}" data-go="t-${k}" aria-label="Essayer : ${esc(t.label)}"><span class="hx">${ico(k)}<b>${t.label}</b></span></button>`; };
+  const ghost = () => `<span class="hex ghost" style="--i:${n++}" aria-hidden="true"></span>`;
+  const heart = `<div class="hex heart" style="--i:${n++}"><span class="hx">${LOGO}<b>La Ruche</b><small>${Object.keys(TYPES).length} alvéoles</small></span></div>`;
+  return `<div class="comb ${intro ? "intro" : ""}" aria-label="Quelques alvéoles d'activités">
+    <div class="comb-row">${cell("cloud")}${cell("brain")}${cell("open")}</div>
+    <div class="comb-row">${cell("rating")}${cell("blanks")}${cell("match")}${cell("qcm")}</div>
+    <div class="comb-row">${cell("sort")}${cell("label")}${heart}${cell("image")}${cell("number")}</div>
+    <div class="comb-row">${cell("prio")}${cell("poll")}${cell("sct")}${cell("slide")}</div>
+    <div class="comb-row">${ghost()}${ghost()}${ghost()}</div>
+  </div>`;
+}
 function loginError(err){
   const c = (err && err.code) || "inconnu"; const host = location.hostname;
   const H = {
@@ -859,24 +894,17 @@ function renderHome(){
   app.innerHTML = `<div class="landing">
   <section class="band hero-band"><div class="band-in hero2">
     <div class="hero-copy">
-      <span class="kicker"><i></i> Classe interactive · ${N} activités · gratuit</span>
+      <span class="kicker"><i></i> Des alvéoles d'activités pour la classe</span>
       <h1 class="h-hero">Toute la salle répond.<br><span class="hl">Chaque voix compte.</span></h1>
-      <p class="lede">Ruche transforme chaque téléphone en boîtier de vote. Lancez un quiz, un nuage de mots ou un brainstorming : les réponses s'affichent en direct à l'écran, et personne ne reste en retrait.</p>
-      <div class="row cta-row">${primary}<button class="btn ghost-light lg" data-act="scrollTo" data-t="comment">Comment ça marche</button></div>
-      ${ed ? `<button class="linkish" data-act="newExample">ou partir du projet d'exemple « Photosynthèse » →</button>` : ""}
-      <ul class="proofs"><li>${ico("check")} Aucun compte pour les élèves</li><li>${ico("check")} Résultats en temps réel</li><li>${ico("check")} Sur téléphone, tablette ou ordinateur</li></ul>
-    </div>
-    <div class="hero-side">
-      <div class="hexfloat" aria-hidden="true"><span class="h1"></span><span class="h2"></span><span class="h3"></span><span class="h4"></span></div>
-      <form class="join2" id="joinForm" autocomplete="off">
-        <span class="kicker"><i></i> Participant</span>
-        <h2>Rejoindre une séance</h2>
-        <label class="hint" for="codeIn">Saisissez le code à 5 lettres affiché à l'écran</label>
-        <input class="code-in" id="codeIn" maxlength="5" placeholder="ABCDE" value="${esc(codeVal)}" inputmode="text" autocapitalize="characters" autocomplete="off">
+      <p class="lede">La Ruche facilite les activités d'apprentissages. Lancez un quiz, un nuage de mots ou un brainstorming : chacun répond depuis son téléphone, les réponses s'affichent en direct à l'écran, et personne ne reste en retrait.</p>
+      <div class="row cta-row">${primary}<button class="btn ghost-light lg" data-act="scrollTo" data-t="ruche">Voir les ${N} alvéoles</button></div>
+      <form class="join3" id="joinForm" autocomplete="off">
+        <label for="codeIn">Vous avez un code ?</label>
+        <div class="join3-row"><input class="code-in" id="codeIn" maxlength="5" placeholder="ABCDE" value="${esc(codeVal)}" inputmode="text" autocapitalize="characters" autocomplete="off"><button class="btn pri" type="submit">Rejoindre ${ico("right")}</button></div>
         <div class="err" id="joinErr" aria-live="polite"></div>
-        <button class="btn pri lg" type="submit">Rejoindre ${ico("right")}</button>
       </form>
     </div>
+    <div class="hero-comb">${combHTML()}</div>
   </div></section>
 
   ${Store.mode === "demo" || cannotWrite ? `<div class="band"><div class="band-in" style="padding-block:16px 0">${Store.mode === "demo" ? `<div class="banner">Démo locale : les données restent dans ce navigateur, et 18 participants fictifs ont déjà répondu au projet d'exemple.</div>` : ""}${cannotWrite ? `<div class="banner">Connectez-vous à claude.ai pour rejoindre une séance et envoyer vos réponses.</div>` : ""}</div></div>` : ""}
@@ -920,7 +948,6 @@ function renderHome(){
       <div class="feat"><span class="hexico">${ico("clock")}</span><h3>Deux rythmes</h3><p>Vous faites défiler les questions, ou chacun avance seul avec une correction immédiate.</p></div>
       <div class="feat"><span class="hexico">${ico("lock")}</span><h3>Vous gardez la main</h3><p>Ouvrez et fermez les votes, lancez un minuteur, masquez une réponse déplacée.</p></div>
       <div class="feat"><span class="hexico">${ico("image")}</span><h3>Images interactives</h3><p>Faites cliquer sur une zone ou légender un schéma, directement sur le téléphone.</p></div>
-      <div class="feat"><span class="hexico">${ico("spark")}</span><h3>Questions générées</h3><p>Décrivez un sujet, l'IA propose des activités prêtes à relire (dans la version Claude).</p></div>
     </div>
   </div></section>
 
@@ -928,7 +955,7 @@ function renderHome(){
     <div><h2 class="h-sec">Prêt à faire bourdonner votre salle ?</h2><p>Votre premier projet est prêt en cinq minutes.</p></div>
     <div class="row">${ed ? `<button class="btn ink lg" data-act="newSession">${ico("plus")} Créer un projet</button>` : Store.fb ? `<button class="btn ink lg" data-act="fbLogin">Espace enseignant</button>` : `<button class="btn ink lg" data-act="scrollTo" data-t="ruche">Essayer une activité</button>`}<button class="btn ghost-dark lg" data-act="scrollTo" data-t="joinForm">J'ai un code</button></div>
   </div></section>
-  <footer class="band foot"><div class="band-in row"><span class="brand small-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 3h14l7 13-7 13H9L2 16z" fill="var(--honey)"/><path d="M12 10h8l4 6-4 6h-8l-4-6z" fill="none" stroke="#1B1300" stroke-width="2"/></svg> Ruche</span><span class="muted small">La classe interactive, en alvéoles.</span></div></footer>
+  <footer class="band foot"><div class="band-in row"><span class="brand small-brand">${LOGO} La Ruche</span><span class="muted small">La classe interactive, en alvéoles.</span></div></footer>
   </div>`;
   const ci = $("#codeIn"); if (focusCode) { ci.focus(); ci.setSelectionRange(ci.value.length, ci.value.length); }
   $("#joinForm").onsubmit = e => { e.preventDefault(); const c = ci.value.trim().toUpperCase(); const s = Bus.sessions.find(x => x.code === c);
@@ -947,14 +974,26 @@ function sessCard(s){
 async function createSession(base){
   const sid = rid(10); const s = base || {title:"Nouveau projet", qs:[], mode:"live", compet:false, feedback:true, qaOpen:true, showNames:false};
   Object.assign(s, {code: codeGen(), createdAt: Date.now(), cur:0, phase:"open", showRes:false, showCorrect:false, showBoard:false, showQA:false, timerEnd:null, qStart:{}, stage:{}, pub:null, board:null, hidden:{}, qaMod:{}, open:true});
-  try { await S.saveSession(sid, s); go("e-" + sid); } catch (e) { toast("Impossible de créer le projet : " + (e.message || e.code)); }
+  try { await S.saveSession(sid, s); go("e-" + sid); } catch (e) { console.error(e); showSaveError(e); }
 }
 
 /* ---------- editor ---------- */
 const Ed = {draft:null, sid:null, sel:0, timer:null, state:"Enregistré"};
 function flushEditor(){ if (Ed.timer) { clearTimeout(Ed.timer); Ed.timer = null; saveDraft(); } }
+function saveErrorHelp(e){
+  const c = String((e && e.code) || ""); const m = String((e && e.message) || "");
+  if (/permission|insufficient|not_granted|not_writer|invalid_argument/i.test(c + m) && !/nested|size|bytes|too large/i.test(m)) return {title: "Enregistrement refusé par la base de données", text: Store.fb ? "Les règles Firestore refusent l'écriture. Dans Firebase → Firestore Database → onglet Règles : collez le contenu de firestore.rules, vérifiez que votre adresse Gmail y figure exactement (" + esc(Store.email || "votre adresse") + "), puis cliquez sur Publier." : "Votre compte n'a pas le droit de modifier cette page. Demandez l'accès « Éditeur » à son propriétaire."};
+  if (/does not exist|not-found|NOT_FOUND|failed-precondition/i.test(c + m)) return {title: "La base de données n'existe pas encore", text: "Dans Firebase → Firestore Database → Créer une base de données (emplacement europe-west, mode production), puis collez les règles."};
+  if (/size|bytes|too large|exceeds|quota/i.test(c + m)) return {title: "Projet trop volumineux", text: "Les images rendent le projet trop lourd. Retirez une ou deux images, ou utilisez des images plus petites."};
+  if (/unavailable|network|offline/i.test(c + m)) return {title: "Connexion perdue", text: "La base de données ne répond pas. Vérifiez votre connexion internet ; l'enregistrement sera retenté à la prochaine modification."};
+  return {title: "Échec de l'enregistrement", text: "La base de données a refusé l'enregistrement."};
+}
+function showSaveError(e){
+  const h = saveErrorHelp(e);
+  $("#overlayRoot").innerHTML = `<div class="overlay" data-act="closeOv"><div class="card pad stack" data-stop style="width:min(620px,100%)"><div class="row"><h2 class="grow">${h.title}</h2><button class="btn sm" data-act="closeOv">Fermer</button></div><p>${h.text}</p><p class="small muted">Code d'erreur : <span class="mono">${esc((e && e.code) || "?")}</span>${e && e.message ? " — " + esc(e.message) : ""}</p>${view.name === "edit" ? `<button class="btn pri" data-act="retrySave">Réessayer l'enregistrement</button>` : ""}</div></div>`;
+}
 function saveDraft(){ if (!Ed.draft) return; const sid = Ed.sid, d = clone(Ed.draft); Ed.state = "Enregistrement…"; updSave();
-  S.saveSession(sid, d).then(() => { Ed.state = "Enregistré"; updSave(); }, e => { Ed.state = "Échec de l'enregistrement : " + (e.message || e.code); updSave(); }); }
+  S.saveSession(sid, d).then(() => { Ed.state = "Enregistré"; Ed.errShown = false; updSave(); }, e => { Ed.state = "⚠ Non enregistré"; updSave(); console.error(e); if (!Ed.errShown) { Ed.errShown = true; showSaveError(e); } }); }
 function dirty(){ Ed.state = "Modifications en attente…"; updSave(); clearTimeout(Ed.timer); Ed.timer = setTimeout(() => { Ed.timer = null; saveDraft(); }, 700); }
 function updSave(){ const el = $("#saveState"); if (el) el.textContent = Ed.state; }
 function curQ(){ return Ed.draft.qs[Ed.sel]; }
@@ -981,13 +1020,6 @@ function drawEditor(){
       </div>
       <div class="card"><div class="qlist" role="list">${d.qs.map((q, i) => `<button class="qitem ${i === Ed.sel ? "sel" : ""}" data-act="selQ" data-i="${i}" role="listitem"><span class="num">${i + 1}</span><span class="hexico">${ico(q.type)}</span><span class="t">${esc(q.title || TYPES[q.type].label)}</span></button>`).join("") || `<p class="muted small" style="padding:8px">Aucune activité.</p>`}</div>
         <div style="padding:8px;border-top:1px solid var(--line)" class="row"><button class="btn sm pri grow" data-act="openAdd">${ico("plus")} Ajouter une activité</button></div></div>
-      <div class="card pad ai-box stack tight" id="aiBox">
-        <h3>${ico("spark").replace('aria-hidden="true"', 'aria-hidden="true" style="width:18px;height:18px;vertical-align:-3px"')} Générer avec l'IA</h3>
-        <p class="small muted">Décrivez un sujet : des questions variées sont ajoutées au projet, prêtes à relire.</p>
-        <textarea class="inp" id="aiTopic" placeholder="Ex. : la Révolution française pour des élèves de 4e" style="min-height:60px"></textarea>
-        <div class="row"><select class="inp" id="aiN" style="width:auto"><option>3</option><option selected>5</option><option>8</option></select><button class="btn sm grow" data-act="aiGen" ${Store.sample ? "" : "disabled"}>Générer</button></div>
-        <p class="small muted" id="aiState">${Store.sample ? "" : "Non disponible dans la version hébergée."}</p>
-      </div>
     </aside>
     <section class="qform">${d.qs.length ? qForm(curQ(), Ed.sel) : `<div class="card pad stack"><span class="eyebrow">Projet vide</span><h2>Choisissez la première activité</h2>${hiveHTML("add")}</div>`}</section>
   </div>`;
@@ -1128,7 +1160,7 @@ function renderLiveOverlay(s){
 function updateSession(s, patch){
   const base = clone(s); delete base.id; delete base._closing;
   for (const [k, v] of Object.entries(patch)) { if (k === "pub" || k === "board" || !v || typeof v !== "object" || Array.isArray(v)) base[k] = v == null ? v : clone(v); else base[k] = deepMerge(base[k] && typeof base[k] === "object" ? base[k] : {}, v); }
-  return S.saveSession(s.id, base).catch(e => toast("Action refusée : " + (e.message || e.code)));
+  return S.saveSession(s.id, base).catch(e => { console.error(e); showSaveError(e); });
 }
 function publishPub(s, q, extra = {}){ const agg = liveAgg(s, q); return {qid: q.id, agg, at: Date.now(), ...extra}; }
 async function liveAction(act, el){
@@ -1354,7 +1386,7 @@ document.addEventListener("click", async e => {
       case "rmImg": q.img = ""; dirty(); return drawEditor();
       case "imgZone": case "imgPin": { const im = el.querySelector("img"); const r = im.getBoundingClientRect(); const x = +(100 * (e.clientX - r.left) / r.width).toFixed(1), y = +(100 * (e.clientY - r.top) / r.height).toFixed(1); q.ar = im.naturalHeight / im.naturalWidth || q.ar;
         if (act === "imgZone") { q.zone.x = x; q.zone.y = y; } else q.pins.push({x, y, t:`Étiquette ${q.pins.length + 1}`}); dirty(); return drawEditor(); }
-      case "aiGen": return aiGenerate();
+      case "retrySave": $("#overlayRoot").innerHTML = ""; Ed.errShown = false; return saveDraft();
     }
   }
   // live
@@ -1406,34 +1438,6 @@ function openAddMenu(){
   $("#overlayRoot").innerHTML = `<div class="overlay" data-act="closeOv"><div class="card pad stack" data-stop style="width:min(980px,100%)"><div class="row"><h2 class="grow">Ajouter une activité</h2><button class="btn sm" data-act="closeOv">Fermer</button></div>${hiveHTML("add")}</div></div>`;
 }
 
-/* ---------- AI generation ---------- */
-async function aiGenerate(){
-  const topic = $("#aiTopic").value.trim(); const n = Number($("#aiN").value); const st = $("#aiState");
-  if (!topic) { st.textContent = "Décrivez d'abord le sujet."; return; }
-  st.textContent = "Génération en cours…"; const btn = $('[data-act=aiGen]'); btn.disabled = true;
-  const prompt = `Tu es concepteur pédagogique. Crée ${n} activités interactives en français sur : « ${topic} ».
-Varie les types parmi : qcm, poll, cloud, open, number, sort, match, blanks, rating, prio, sct.
-Réponds UNIQUEMENT par un tableau JSON. Formats exacts :
-{"type":"qcm","title":"…","multi":false,"options":[{"t":"…","ok":true},{"t":"…","ok":false}]}
-{"type":"poll","title":"…","options":[{"t":"…"}]}
-{"type":"cloud","title":"…","maxWords":2}
-{"type":"open","title":"…"}
-{"type":"number","title":"…","answer":123,"tol":5,"unit":"…"}
-{"type":"sort","title":"…","items":["dans le bon ordre", "…"]}
-{"type":"match","title":"…","pairs":[{"l":"…","r":"…"}]}
-{"type":"blanks","title":"…","text":"Phrase avec [mot|variante] entre crochets."}
-{"type":"rating","title":"…","criteria":["…"],"min":1,"max":5,"minLabel":"…","maxLabel":"…"}
-{"type":"prio","title":"…","budget":100,"options":["…"]}
-{"type":"sct","title":"…","hypo":"…","info":"…","panel":[0,1,2,5,2]}
-Les faits doivent être exacts. 3 à 5 options par QCM, 4 à 5 éléments à classer, 3 à 5 paires.`;
-  try {
-    const out = await Store.sample.json(prompt, {modelTier: "default"});
-    const arr = (Array.isArray(out) ? out : (out && out.questions) || []).map(x => normalizeQuestion({...x, id: rid(8)})).filter(Boolean);
-    if (!arr.length) throw {message: "aucune activité exploitable"};
-    Ed.draft.qs.push(...arr); Ed.sel = Ed.draft.qs.length - arr.length; dirty(); drawEditor(); toast(`${arr.length} activités ajoutées. Relisez-les avant de présenter.`);
-  } catch (e) { st.textContent = e && e.code === "not_granted" ? "La génération a été refusée pour cette page." : e && e.code === "rate_limited" ? "Trop de demandes : réessayez dans une minute." : "La génération a échoué : " + (e.message || e.code || "erreur inconnue"); btn.disabled = false; }
-}
-
 /* ---------- boot ---------- */
 (async function boot(){
   route();
@@ -1443,7 +1447,7 @@ Les faits doivent être exacts. 3 à 5 options par QCM, 4 à 5 éléments à cla
     Store.mode = "db"; Store.db = db;
     try { Store.uid = user ? await user.id() : null; } catch { Store.uid = null; }
     try { Store.isEditor = user ? ((await user.canEdit()) || (await user.isOwner())) : false; } catch { Store.isEditor = false; }
-    use("assets").then(a => Store.assets = a); use("downloads").then(d => Store.downloads = d); use("sample").then(sm => { Store.sample = sm; if (view.name === "edit") drawEditor(); });
+    use("assets").then(a => Store.assets = a); use("downloads").then(d => Store.downloads = d); 
   } else if (FIREBASE_CONFIG && !window.claude) {
     try {
       const load = src => new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
