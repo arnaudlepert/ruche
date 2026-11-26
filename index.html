@@ -436,7 +436,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "548429125363",
   appId: "1:548429125363:web:1b22ff83bbf0100e1d0986"
 };
-const ENSEIGNANTS = ["arnaud50.lepert@gmail.com"];
+const ENSEIGNANTS = ["arnaud50.lepert@gmail.com"]; // compte administrateur : garde la main sur les projets créés avant les comptes enseignants
 /* ===================================================================== */
 (() => {
 "use strict";
@@ -759,7 +759,7 @@ const S = {
     if (Store.mode === "db") return Store.db.collection("sessions").onSnapshot(s => cb(s.docs.map(d => ({id: d.id, ...d.data()}))), e => cb([], e));
     return demo.on("sessions", () => cb(Object.entries(demo.data.sessions).map(([id, d]) => ({id, ...clone(d)}))));
   },
-  async saveSession(sid, data){ data.updatedAt = Date.now();
+  async saveSession(sid, data){ data.updatedAt = Date.now(); if (Store.fb && !data.owner) data.owner = Store.uid;
     if (Store.mode === "db") return q4("s/" + sid)(() => Store.db.doc("sessions/" + sid).set(clone(data)));
     demo.data.sessions[sid] = clone(data); demo.persist(); demo.emit("sessions"); },
   async patchSession(sid, patch){
@@ -769,14 +769,17 @@ const S = {
     if (Store.mode === "db") return q4("s/" + sid)(() => Store.db.doc("sessions/" + sid).delete());
     delete demo.data.sessions[sid]; demo.persist(); demo.emit("sessions"); },
   watchAnswers(cb){
+    if (Store.fb) return fbAns.watch(cb);
     if (Store.mode === "db") return Store.db.collection("answers").onSnapshot(s => cb(s.docs.map(d => ({id: d.id, data: d.data()}))), () => cb([]));
     return demo.on("answers", () => cb(Object.entries(demo.data.answers).map(([id, data]) => ({id, data: clone(data)}))));
   },
   watchMine(cb){
+    if (Store.fb) { fbMine.cb = cb; return () => {}; }
     if (Store.mode === "db") { if (!Store.uid) { cb(null); return () => {}; } return Store.db.doc("answers/" + Store.uid).onSnapshot(s => cb(s.exists ? s.data() : null), () => cb(null)); }
     return demo.on("answers", () => cb(clone(demo.data.answers[Store.uid] || null)));
   },
   async writeMine(patch){
+    if (Store.fb) return fbWriteMine(patch);
     if (Store.mode === "db") { if (!Store.uid) throw new Error("no-id"); const ref = Store.db.doc("answers/" + Store.uid);
       return q4("a")(async () => { const s = await ref.get(); if (!s.exists) await ref.set({s:{}, n:{}, ...clone(patch)}); else await (Store.fb ? ref.set(clone(patch), {merge: true}) : ref.update(clone(patch))); }); }
     demo.data.answers[Store.uid] = deepMerge(demo.data.answers[Store.uid] || {s:{}, n:{}}, patch); demo.persist(); demo.emit("answers");
@@ -810,11 +813,29 @@ function seedDemo(){
   demo.data.qa["demo-5"] = {items:{}, likes:{m1:true, m0:true}}; demo.data.qa["demo-6"] = {items:{}, likes:{m1:true}};
 }
 
+/* ---------- hosted version: answers live under each session ---------- */
+const fbAns = {subs:{}, docs:{}, cb:null,
+  watch(cb){ this.cb = cb; this.sync(); return () => {}; },
+  sync(){ if (!Store.fb || !this.cb) return; const want = new Set(myS().map(s => s.id));
+    for (const sid of Object.keys(this.subs)) if (!want.has(sid)) { this.subs[sid](); delete this.subs[sid]; delete this.docs[sid]; }
+    for (const sid of want) if (!this.subs[sid]) this.subs[sid] = Store.db.collection("sessions/" + sid + "/answers").onSnapshot(snap => { this.docs[sid] = snap.docs.map(d => ({uid: d.id, data: d.data()})); this.emit(); }, e => console.warn(e));
+    this.emit(); },
+  emit(){ const by = {}; for (const [sid, list] of Object.entries(this.docs)) for (const {uid, data} of list) { const o = by[uid] = by[uid] || {n:{}, s:{}}; o.n[sid] = data.n || "Anonyme"; o.s[sid] = data.a || {}; } this.cb(Object.entries(by).map(([id, data]) => ({id, data}))); }
+};
+const fbMine = {cb:null, sid:null, unsub:null,
+  follow(sid){ if (!Store.fb || sid === this.sid || !Store.uid) return; if (this.unsub) this.unsub(); this.sid = sid; Bus.loaded.mine = false;
+    this.unsub = Store.db.doc("sessions/" + sid + "/answers/" + Store.uid).onSnapshot(d => { const x = d.exists ? d.data() : null; if (this.cb) this.cb(x ? {n:{[sid]: x.n}, s:{[sid]: x.a || {}}} : null); }, () => { if (this.cb) this.cb(null); }); }
+};
+async function fbWriteMine(patch){
+  const sids = new Set([...Object.keys(patch.n || {}), ...Object.keys(patch.s || {})]);
+  for (const sid of sids) { const body = {}; if (patch.n && patch.n[sid] != null) body.n = patch.n[sid]; if (patch.s && patch.s[sid]) body.a = clone(patch.s[sid]); await Store.db.doc("sessions/" + sid + "/answers/" + Store.uid).set(body, {merge: true}); }
+}
+function myS(){ return Store.fb ? Bus.sessions.filter(s => s.owner === Store.uid || (!s.owner && Store.admin)) : Bus.sessions; }
 /* ---------- global subscriptions ---------- */
 let renderQueued = false;
 function schedule(){ if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; route(); }); }
 function startSubs(){
-  subs.push(S.watchSessions((list, err) => { Bus.sessions = list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); Bus.sess = Object.fromEntries(list.map(s => [s.id, s])); Bus.loaded.sessions = true; Bus.sessErr = err; schedule(); }));
+  subs.push(S.watchSessions((list, err) => { Bus.sessions = list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); Bus.sess = Object.fromEntries(list.map(s => [s.id, s])); Bus.loaded.sessions = true; Bus.sessErr = err; if (Store.fb) fbAns.sync(); schedule(); }));
   subs.push(S.watchMine(d => { Bus.mine = d; Bus.loaded.mine = true; schedule(); }));
   subs.push(S.watchQA(list => { Bus.qa = list; schedule(); }));
   if (Store.isEditor) subs.push(S.watchAnswers(list => { Bus.answers = list; schedule(); }));
@@ -870,6 +891,41 @@ function combHTML(){
     <div class="comb-row">${ghost()}${ghost()}${ghost()}</div>
   </div>`;
 }
+const AUTH_MSG = {
+  "auth/invalid-credential": "E-mail ou mot de passe incorrect.", "auth/invalid-login-credentials": "E-mail ou mot de passe incorrect.", "auth/wrong-password": "E-mail ou mot de passe incorrect.",
+  "auth/user-not-found": "Aucun compte avec cet e-mail : cliquez sur « Créer mon compte ».", "auth/email-already-in-use": "Un compte existe déjà avec cet e-mail : cliquez sur « Se connecter ».",
+  "auth/weak-password": "Le mot de passe doit faire au moins 6 caractères.", "auth/invalid-email": "Cette adresse e-mail n'est pas valide.", "auth/missing-password": "Saisissez un mot de passe.",
+  "auth/operation-not-allowed": "Cette méthode de connexion n'est pas activée dans Firebase (Authentication → Méthode de connexion).", "auth/too-many-requests": "Trop d'essais : patientez quelques minutes.",
+  "auth/network-request-failed": "La fenêtre Google a été bloquée par le navigateur ou le réseau. Utilisez plutôt la connexion par e-mail et mot de passe ci-dessus.",
+  "auth/popup-closed-by-user": "La fenêtre Google a été fermée avant la fin.", "auth/unauthorized-domain": "Ce site n'est pas autorisé dans Firebase (Authentication → Paramètres → Domaines autorisés)."
+};
+function openLogin(msg, ok){
+  const em = $("#lgEmail") ? $("#lgEmail").value : "";
+  $("#overlayRoot").innerHTML = `<div class="overlay" data-act="closeOv"><form class="card pad stack" data-stop id="lgForm" style="width:min(460px,100%)">
+    <div class="row"><h2 class="grow">Espace enseignant</h2><button class="btn sm" type="button" data-act="closeOv">Fermer</button></div>
+    <p class="muted small">Chaque enseignant a son propre compte et ne voit que ses projets.</p>
+    <div class="field"><label for="lgEmail">E-mail</label><input class="inp" id="lgEmail" type="email" autocomplete="email" value="${esc(em)}"></div>
+    <div class="field"><label for="lgPass">Mot de passe (6 caractères minimum)</label><input class="inp" id="lgPass" type="password" autocomplete="current-password"></div>
+    ${msg ? `<div class="banner" style="${ok ? "" : "background:var(--bad-soft);color:var(--bad)"}">${msg}</div>` : ""}
+    <div class="row"><button class="btn pri grow" type="submit">Se connecter</button><button class="btn grow" type="button" data-act="fbEmailUp">Créer mon compte</button></div>
+    <button class="btn ghost sm" type="button" data-act="fbReset" style="justify-self:start">Mot de passe oublié ?</button>
+    <p class="small muted" style="text-align:center">ou</p>
+    <button class="btn" type="button" data-act="fbGoogle">Continuer avec Google</button>
+  </form></div>`;
+  $("#lgForm").onsubmit = e => { e.preventDefault(); fbAuth("fbEmailIn"); };
+  setTimeout(() => { const i = em ? $("#lgPass") : $("#lgEmail"); if (i) i.focus(); }, 30);
+}
+async function fbAuth(act){
+  const email = ($("#lgEmail") ? $("#lgEmail").value : "").trim(), pass = $("#lgPass") ? $("#lgPass").value : "";
+  const A = firebase.auth();
+  try {
+    if (act === "fbEmailIn") await A.signInWithEmailAndPassword(email, pass);
+    else if (act === "fbEmailUp") await A.createUserWithEmailAndPassword(email, pass);
+    else if (act === "fbReset") { if (!email) return openLogin("Saisissez d'abord votre e-mail."); await A.sendPasswordResetEmail(email); return openLogin("E-mail de réinitialisation envoyé à " + esc(email) + ". Pensez à vérifier les courriers indésirables.", true); }
+    else { const prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt: "select_account"}); try { await A.signInWithPopup(prov); } catch (e) { if (e.code === "auth/popup-blocked") return A.signInWithRedirect(prov); throw e; } }
+    location.reload();
+  } catch (e) { console.error(e); openLogin((AUTH_MSG[e.code] || "Connexion impossible.") + ` <span class="small">(${esc(e.code || "erreur")})</span>`); }
+}
 function loginError(err){
   const c = (err && err.code) || "inconnu"; const host = location.hostname;
   const H = {
@@ -912,10 +968,10 @@ function renderHome(){
   ${ed ? `<section class="band"><div class="band-in sec stack">
       <div class="section-h"><div><span class="eyebrow">Votre ruche</span><h2 class="h-sec">Mes projets</h2></div><div class="row"><button class="btn sm" data-act="newExample">${ico("copy")} Projet d'exemple</button><button class="btn pri sm" data-act="newSession">${ico("plus")} Nouveau projet</button></div></div>
       ${Bus.slow && !Bus.loaded.sessions ? `<div class="banner">Les projets ne répondent pas encore. Vérifiez votre connexion ; la liste s'affichera dès qu'ils seront joignables.</div>` : ""}
-      ${Bus.sessions.length ? `<div class="sess-list">${Bus.sessions.map(s => sessCard(s)).join("")}</div>` : `<div class="empty">Aucun projet pour l'instant. Cliquez sur « Nouveau projet », ou partez de l'exemple « Photosynthèse » qui contient les ${N} activités.</div>`}
+      ${myS().length ? `<div class="sess-list">${myS().map(s => sessCard(s)).join("")}</div>` : `<div class="empty">Aucun projet pour l'instant. Cliquez sur « Nouveau projet », ou partez de l'exemple « Photosynthèse » qui contient les ${N} activités.</div>`}
   </div></section>` : ""}
   ${!ed && Store.fb ? `<section class="band"><div class="band-in sec"><div class="card pad stack teacher-card"><span class="eyebrow">Animateur</span><h2>Créer vos propres projets</h2>
-      ${Store.email ? `<p>Vous êtes connecté avec <b>${esc(Store.email)}</b>, qui n'est pas dans la liste des enseignants de cette ruche. Ajoutez cette adresse dans <code>ENSEIGNANTS</code> (index.html) et dans les règles Firestore, ou reconnectez-vous avec le bon compte.</p><div class="row"><button class="btn" data-act="fbLogout">Changer de compte</button></div>` : `<p class="muted">Connectez-vous avec votre compte Google enseignant pour créer, modifier et présenter vos projets.</p><div class="row"><button class="btn pri" data-act="fbLogin">Se connecter (enseignant)</button></div>`}</div></div></section>` : ""}
+      ${Store.email ? `<p>Vous êtes connecté avec <b>${esc(Store.email)}</b>, qui n'est pas dans la liste des enseignants de cette ruche. Ajoutez cette adresse dans <code>ENSEIGNANTS</code> (index.html) et dans les règles Firestore, ou reconnectez-vous avec le bon compte.</p><div class="row"><button class="btn" data-act="fbLogout">Changer de compte</button></div>` : `<p class="muted">Créez gratuitement votre compte enseignant (e-mail et mot de passe), ou connectez-vous, pour créer, modifier et présenter vos propres projets.</p><div class="row"><button class="btn pri" data-act="fbLogin">Se connecter ou créer un compte</button></div>`}</div></div></section>` : ""}
 
   <section class="band" id="comment"><div class="band-in sec stack-lg">
     <div class="sec-head"><span class="eyebrow">Comment ça marche</span><h2 class="h-sec">De la préparation au débrief en trois temps</h2></div>
@@ -1219,7 +1275,7 @@ function renderTry(type, changed){
 function myAns(sid, qid){ if (sid === "try") return Try.ans[qid] || null; const m = Bus.mine; return m && m.s && m.s[sid] && m.s[sid][qid] ? m.s[sid][qid] : null; }
 function myNick(sid){ const m = Bus.mine; return m && m.n && m.n[sid] != null ? m.n[sid] : null; }
 function renderPlay(s, changed){
-  startTick();
+  startTick(); if (Store.fb) fbMine.follow(s.id);
   const nick = myNick(s.id);
   if (Store.mode === "db" && !Store.uid) { app.innerHTML = `<div class="part wrap"><div class="empty">Connectez-vous à claude.ai pour participer à cette séance.</div></div>`; return; }
   if (nick == null) {
@@ -1358,9 +1414,8 @@ document.addEventListener("click", async e => {
   if (act === "delSession") { if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.innerHTML = "Confirmer la suppression"; setTimeout(() => { if (el.isConnected) { el.dataset.confirm = ""; el.innerHTML = ico("trash"); } }, 3500); return; } return S.deleteSession(el.dataset.sid).then(() => toast("Séance supprimée."), err => toast("Suppression refusée : " + (err.message || err.code))); }
   if (act === "scrollTo") { const t = document.getElementById(el.dataset.t); if (t) { t.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"}); if (el.dataset.t === "joinForm") setTimeout(() => $("#codeIn") && $("#codeIn").focus(), 400); } return; }
   if (act === "homeDemo") { Home.demo = el.dataset.t; const d = $("#homeDemo"); if (d) d.innerHTML = homeDemoHTML(); return; }
-  if (act === "fbLogin") { const prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt: "select_account"});
-    try { await firebase.auth().signInWithPopup(prov); location.reload(); }
-    catch (err) { const c = err.code || ""; if (c === "auth/popup-blocked" || c === "auth/operation-not-supported-in-this-environment" || c === "auth/web-storage-unsupported") { try { await firebase.auth().signInWithRedirect(prov); return; } catch (e2) { return loginError(e2); } } loginError(err); } return; }
+  if (act === "fbLogin") { openLogin(); return; }
+  if (act === "fbEmailIn" || act === "fbEmailUp" || act === "fbReset" || act === "fbGoogle") return fbAuth(act);
   if (act === "fbLogout") { await firebase.auth().signOut(); location.reload(); return; }
   if (act === "closeOv") { $("#overlayRoot").innerHTML = ""; return; }
   if (act === "copyCSV") { const ta = $("#csvOut"); try { await navigator.clipboard.writeText(ta.value); toast("Copié."); } catch { ta.select(); toast("Texte sélectionné : copiez-le avec Ctrl+C."); } return; }
@@ -1456,7 +1511,7 @@ function openAddMenu(){
       firebase.initializeApp(FIREBASE_CONFIG);
       const u = await new Promise(res => { const off = firebase.auth().onAuthStateChanged(x => { if (x) { off(); res(x); } else firebase.auth().signInAnonymously().catch(e => { off(); res(null); toast("Connexion anonyme refusée : activez « Anonyme » dans Firebase Authentication."); }); }); });
       Store.mode = "db"; Store.fb = true; Store.db = firebase.firestore(); Store.uid = u ? u.uid : null; Store.email = u && u.email ? u.email.toLowerCase() : "";
-      Store.isEditor = !!Store.email && ENSEIGNANTS.map(e => e.toLowerCase().trim()).includes(Store.email);
+      Store.admin = !!Store.email && ENSEIGNANTS.map(e => e.toLowerCase().trim()).includes(Store.email); Store.isEditor = !!u && !u.isAnonymous;
     } catch (e) { console.error(e); Store.mode = "demo"; Store.uid = "moi"; Store.isEditor = true; seedDemo(); toast("Firebase injoignable : passage en mode démo local."); }
   } else {
     Store.mode = "demo"; Store.uid = "moi"; Store.isEditor = true; seedDemo();
