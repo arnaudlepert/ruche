@@ -253,6 +253,13 @@ textarea.inp{resize:vertical;min-height:70px}
 .comb-legend .g-presenter{outline:1px solid #ffffff55}
 .comb-legend small{display:block;color:#A9B6CB;font-size:.74rem}
 @media (max-width:600px){.comb-legend{grid-template-columns:1fr}}
+.imp-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:12px}
+.imp-grid textarea{min-height:340px;font-size:.82rem}
+.imp-prev{border:1px solid var(--line);border-radius:10px;padding:10px;max-height:380px;overflow:auto;display:grid;gap:6px;align-content:start}
+.imp-item{display:flex;gap:10px;align-items:center}
+.imp-item .hexico{width:30px;height:34px;background:var(--hx-bg);color:var(--hx-ink)}
+.imp-item .hexico svg{width:16px;height:16px}
+@media (max-width:700px){.imp-grid{grid-template-columns:1fr}}
 /* facilitation tools */
 .poker-hand{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
 .pk-pick{aspect-ratio:3/4;border-radius:10px;border:2px solid var(--line);background:var(--surface);font-family:var(--f-mono);font-weight:800;font-size:1.2rem;cursor:pointer;color:var(--ink)}
@@ -1069,6 +1076,236 @@ async function exportInvite(s){
     toast("Diapositive téléchargée : insérez-la dans votre présentation.");
   } catch (e) { console.error(e); toast("Impossible de créer la diapositive : " + (e.message || e)); }
 }
+/* ---------- Word / PDF import: extract text, then reuse the Markdown parser ---------- */
+const BOX_ON = /^[☒☑✓✔✅■▣]\s*/, BOX_OFF = /^[☐□▢◻]\s*/;
+function lineFix(t){
+  let s = t.replace(/ /g, " ").trim(), bullet = false;
+  const m = s.match(/^[-•◦▪●‣–·]+\s*/); if (m) { bullet = true; s = s.slice(m[0].length); }
+  if (BOX_ON.test(s)) return "- [x] " + s.replace(BOX_ON, "");
+  if (BOX_OFF.test(s)) return "- [ ] " + s.replace(BOX_OFF, "");
+  return bullet ? "- " + s : s;
+}
+async function docxToMd(buf){
+  await loadLib("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js", "mammoth");
+  const {value} = await mammoth.convertToHtml({arrayBuffer: buf});
+  const doc = new DOMParser().parseFromString(`<div>${value}</div>`, "text/html"); const out = [];
+  const walk = el => { for (const n of el.children) { const tag = n.tagName.toLowerCase(), tx = n.textContent.trim();
+    if (tag === "h1") out.push("", "# " + tx);
+    else if (/^h[2-6]$/.test(tag)) out.push("", "## " + tx);
+    else if (tag === "ul" || tag === "ol") { [...n.children].forEach((li, k) => { const t = li.textContent.trim(); const f = lineFix(t); out.push(f !== t ? f : tag === "ol" ? `${k + 1}. ${t}` : "- " + t); }); }
+    else if (tag === "table") [...n.querySelectorAll("tr")].forEach(tr => out.push([...tr.children].map(c => c.textContent.trim()).join(" = ")));
+    else if (tx) tx.split("\n").forEach(l => out.push(lineFix(l)));
+  } };
+  walk(doc.body.firstElementChild); return out.join("\n");
+}
+async function pdfToMd(buf){
+  await loadLib("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js", "pdfjsWorker");
+  await loadLib("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", "pdfjsLib");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buf), isEvalSupported: false}).promise; const out = [];
+  for (let pn = 1; pn <= pdf.numPages; pn++) {
+    const tc = await (await pdf.getPage(pn)).getTextContent(); const rows = [];
+    for (const it of tc.items) { if (!it.str) continue; const y = it.transform[5], x = it.transform[4]; let r = rows.find(r => Math.abs(r.y - y) < 3); if (!r) { r = {y, parts: []}; rows.push(r); } r.parts.push({x, s: it.str}); }
+    rows.sort((a, b) => b.y - a.y).forEach(r => out.push(lineFix(r.parts.sort((a, b) => a.x - b.x).map(p => p.s).join("").replace(/\s+/g, " "))));
+  }
+  // re-join lines that the PDF layout wrapped, and mark the document title
+  const lines = [];
+  for (const l of out) {
+    const prev = lines[lines.length - 1];
+    const isKey = /^([^:]{2,22})\s*:/.test(l) && MD_KEYS.includes(norm(l.split(":")[0]).replace(/\s+/g, ""));
+    if (l && prev && /^[a-zà-ÿ(«»"'’]/.test(l) && !/:\s*$/.test(prev) && !isKey) lines[lines.length - 1] = prev + " " + l; else lines.push(l);
+  }
+  const first = lines.findIndex(l => l.trim());
+  if (first >= 0 && !/^#/.test(lines[first]) && !/^[^:]{2,40}\s*:/.test(lines[first])) lines[first] = "# " + lines[first];
+  return lines.join("\n");
+}
+async function readImportFile(f){
+  const name = (f.name || "").toLowerCase();
+  if (name.endsWith(".docx")) return docxToMd(await f.arrayBuffer());
+  if (name.endsWith(".pdf")) return pdfToMd(await f.arrayBuffer());
+  if (name.endsWith(".doc")) throw new Error("Les anciens fichiers .doc ne sont pas pris en charge : enregistrez-le en .docx depuis Word.");
+  return await f.text();
+}
+/* ---------- Markdown import ---------- */
+const MD_TEMPLATE = `# Ma séance
+
+## QCM : Quel gaz la plante absorbe-t-elle ?
+- [ ] Le dioxygène
+- [x] Le dioxyde de carbone
+- [ ] Le diazote
+minuteur: 30
+
+## Sondage : Avez-vous déjà fait pousser une plante ?
+- Oui, souvent
+- Une ou deux fois
+- Jamais
+
+## Nuage de mots : Quel mot vous vient à l'esprit ?
+mots: 2
+
+## Question ouverte : Quelle question vous reste-t-il ?
+
+## Notation : Évaluez la séance
+- Clarté
+- Rythme
+min: 1
+max: 5
+
+## Estimation : Concentration de CO2 dans l'air en 2024 ?
+réponse: 422
+tolérance: 15
+unité: ppm
+
+## Ordre : Remettez les étapes dans l'ordre
+1. Absorption par les racines
+2. Montée dans la tige
+3. Évaporation par les feuilles
+
+## Appariement : Associez chaque terme à sa définition
+- Chlorophylle = Pigment vert
+- Stomate = Pore des échanges gazeux
+
+## Texte à trous : Complétez la phrase
+La plante transforme le [dioxyde de carbone|CO2] et l'[eau] en [glucose|sucre].
+
+## Priorisation : Quel facteur compte le plus ?
+- Lumière
+- Eau
+- Nutriments
+points: 100
+
+## Brainstorming : Comment rendre la cour plus verte ?
+idées: 3
+
+## Concordance : Diagnostic d'une plante
+hypothèse: Les feuilles jaunissent : excès d'arrosage
+information: Le terreau est sec sur 5 cm
+experts: 7, 3, 0, 0, 0
+
+## Diapositive : Bienvenue
+Rejoignez la séance avec le code affiché à l'écran.
+
+## Estimation cachée : Combien de points pour cette tâche ?
+cartes: fibonacci
+
+## Rétrospective : Bilan du sprint
+format: commencer-arrêter-continuer
+
+## Vote par points : Quelle action engager ?
+- Raccourcir les démos
+- Ordre du jour obligatoire
+points: 3
+
+## Lean Coffee : De quoi voulons-nous parler ?
+votes: 3
+temps: 5
+
+## Météo : Quelle est votre météo du jour ?
+
+## ROTI : Quel retour sur le temps investi ?
+
+## Minuteur : Travail en sous-groupes
+durée: 10
+
+## Tirage au sort : Qui présente la synthèse ?
+- Camille
+- Samir
+`;
+const MD_TYPES = [
+  ["estimation cachee","poker"],["poker","poker"],["texte a trous","blanks"],["trous","blanks"],["question ouverte","open"],["ouverte","open"],
+  ["nuage","cloud"],["qcm","qcm"],["quiz","qcm"],["sondage","poll"],["notation","rating"],["estimation","number"],["nombre","number"],
+  ["ordre","sort"],["classement","sort"],["appariement","match"],["association","match"],["priorisation","prio"],["brainstorming","brain"],
+  ["concordance","sct"],["diapositive","slide"],["consigne","slide"],["slide","slide"],["retrospective","retro"],["retro","retro"],
+  ["vote par points","dots"],["gommettes","dots"],["lean coffee","lean"],["lean","lean"],["meteo","mood"],["humeur","mood"],["roti","roti"],
+  ["minuteur","timer"],["chrono","timer"],["tirage","draw"],["tour de parole","draw"]
+];
+const MD_KEYS = ["minuteur","timer","points","reponse","tolerance","unite","mots","idees","min","max","cartes","format","duree","experts","hypothese","information","votes","temps","multiple","longueur","mot","commentaire"];
+function parseMd(text){
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  let title = ""; const blocks = []; let cur = null;
+  for (const raw of lines) {
+    const l = raw.trimEnd();
+    if (/^#\s+/.test(l) && !/^##/.test(l)) { if (!title) title = l.replace(/^#\s+/, "").trim(); continue; }
+    if (/^#{2,3}\s+/.test(l)) { cur = {head: l.replace(/^#{2,3}\s+/, "").trim(), lines: []}; blocks.push(cur); continue; }
+    const hm = l.trim().match(/^([^:\-\[\d][^:]{1,40})\s*:\s*(.+)$/);
+    if (hm && !MD_KEYS.includes(norm(hm[1]).replace(/\s+/g, "")) && MD_TYPES.some(([w]) => norm(hm[1]) === w || norm(hm[1]).startsWith(w + " ") || norm(hm[1]) === w)) { cur = {head: l.trim(), lines: []}; blocks.push(cur); continue; }
+    if (cur) cur.lines.push(l);
+  }
+  const out = [], warn = [];
+  blocks.forEach((b, bi) => {
+    let type = null, qtitle = b.head;
+    const m = b.head.match(/^([^:]{2,40})\s*:\s*(.+)$/);
+    if (m) { const k = norm(m[1]); const hit = MD_TYPES.find(([w]) => k === w || k.startsWith(w)); if (hit) { type = hit[1]; qtitle = m[2].trim(); } }
+    const kv = {}, checks = [], bullets = [], nums = [], text = [];
+    for (const l0 of b.lines) {
+      const l = l0.trim(); if (!l) { text.push(""); continue; }
+      let mm;
+      if ((mm = l.match(/^[-*+]\s*\[( |x|X)\]\s*(.+)$/))) checks.push({t: mm[2].trim(), ok: mm[1].toLowerCase() === "x"});
+      else if ((mm = l.match(/^[-*+]\s+(.+)$/))) bullets.push(mm[1].trim());
+      else if ((mm = l.match(/^\d+[.)]\s+(.+)$/))) nums.push(mm[1].trim());
+      else if ((mm = l.match(/^([A-Za-zÀ-ÿ' _-]{2,22})\s*:\s*(.*)$/)) && MD_KEYS.includes(norm(mm[1]).replace(/\s+/g, ""))) kv[norm(mm[1]).replace(/\s+/g, "")] = mm[2].trim();
+      else text.push(l);
+    }
+    const para = text.join("\n").trim();
+    if (!type) type = checks.length ? "qcm" : bullets.length ? "poll" : nums.length ? "sort" : /\[[^\]]+\]/.test(para) ? "blanks" : "open";
+    const q = newQuestion(type); q.title = qtitle || TYPES[type].label;
+    const num = (v, d) => { const x = parseFloat(String(v || "").replace(",", ".")); return isFinite(x) ? x : d; };
+    const yes = v => /^(oui|yes|vrai|true|1)$/i.test(String(v || "").trim());
+    const list = checks.length ? checks.map(c => c.t) : bullets.length ? bullets : nums;
+    const where = `« ${q.title.slice(0, 40)} »`;
+    switch (type) {
+      case "qcm": { const opts = checks.length ? checks : list.map(t => ({t, ok: false})); if (opts.length < 2) warn.push(`${where} : il faut au moins 2 réponses.`); else { q.options = opts; if (!opts.some(o => o.ok)) warn.push(`${where} : aucune bonne réponse cochée avec [x].`); q.multi = opts.filter(o => o.ok).length > 1 || yes(kv.multiple); } break; }
+      case "poll": if (list.length >= 2) q.options = list.map(t => ({t})); else warn.push(`${where} : il faut au moins 2 options.`); q.multi = yes(kv.multiple); break;
+      case "cloud": q.maxWords = clamp(num(kv.mots, q.maxWords), 1, 10); break;
+      case "open": q.maxLen = clamp(num(kv.longueur, q.maxLen), 20, 600); break;
+      case "rating": if (list.length) q.criteria = list; q.min = num(kv.min, q.min); q.max = num(kv.max, q.max); break;
+      case "number": if (kv.reponse == null) warn.push(`${where} : indiquez « réponse: … ».`); q.answer = num(kv.reponse, q.answer); q.tol = num(kv.tolerance, 0); q.unit = kv.unite || ""; break;
+      case "sort": if (list.length >= 2) q.items = list; else warn.push(`${where} : il faut au moins 2 éléments.`); break;
+      case "match": { const pairs = list.map(t => t.split(/\s*(?:=|→|->|\|)\s*/)).filter(p => p.length >= 2 && p[0] && p[1]).map(p => ({l: p[0], r: p.slice(1).join(" ")})); if (pairs.length >= 2) q.pairs = pairs; else warn.push(`${where} : écrivez les paires « élément = correspondant ».`); break; }
+      case "blanks": if (/\[[^\]]+\]/.test(para)) q.text = para; else warn.push(`${where} : mettez les mots à trouver entre [crochets].`); break;
+      case "prio": if (list.length >= 2) q.options = list; q.budget = num(kv.points, q.budget); break;
+      case "brain": q.maxIdeas = clamp(num(kv.idees, q.maxIdeas), 1, 10); break;
+      case "sct": q.hypo = kv.hypothese || q.hypo; q.info = kv.information || q.info; if (kv.experts) { const p = kv.experts.split(/[,;\s]+/).map(Number).filter(isFinite); if (p.length === 5) q.panel = p; else warn.push(`${where} : « experts » attend 5 nombres.`); } break;
+      case "slide": q.body = para || q.body; break;
+      case "poker": q.deck = /taille|tshirt|t-shirt/i.test(kv.cartes || "") ? "tshirt" : "fibo"; break;
+      case "retro": { const f = norm(kv.format || ""); const key = /bateau|boat/.test(f) ? "boat" : /content|triste|gsm/.test(f) ? "gsm" : /4\s*l/.test(f) ? "l4" : "ssc"; if (list.length >= 2) { q.cols = list; q.format = "custom"; } else { q.format = key; q.cols = [...RETRO[key]]; } break; }
+      case "dots": if (list.length >= 2) q.options = list; else warn.push(`${where} : il faut au moins 2 propositions.`); q.dots = clamp(num(kv.points, q.dots), 1, 20); break;
+      case "lean": q.maxIdeas = clamp(num(kv.idees, q.maxIdeas), 1, 5); q.votes = clamp(num(kv.votes, q.votes), 1, 10); q.slot = clamp(num(kv.temps, q.slot), 1, 30); break;
+      case "mood": if (kv.mot != null) q.word = yes(kv.mot); break;
+      case "roti": if (kv.commentaire != null) q.comment = yes(kv.commentaire); break;
+      case "timer": q.mins = clamp(num(kv.duree, q.mins), 1, 120); break;
+      case "draw": if (list.length) q.listText = list.join("\n"); break;
+    }
+    if (kv.minuteur != null || kv.timer != null) q.timer = clamp(num(kv.minuteur ?? kv.timer, 0), 0, 600);
+    if (kv.points != null && TYPES[type].scored) q.points = num(kv.points, q.points);
+    out.push(q);
+  });
+  if (!blocks.length) warn.push("Aucune activité trouvée : chaque activité commence par une ligne « ## Type : titre ».");
+  return {title, qs: out, warn};
+}
+function openImport(){
+  $("#overlayRoot").innerHTML = `<div class="overlay" data-act="closeOv"><div class="card pad stack" data-stop style="width:min(980px,100%)">
+    <div class="row"><h2 class="grow">Importer des activités</h2><button class="btn sm" data-act="closeOv">Fermer</button></div>
+    <p class="muted small">Collez votre texte ou choisissez un fichier <b>Word (.docx)</b>, <b>PDF</b>, Markdown ou texte. Chaque activité commence par une ligne <code>Type : titre</code> (par exemple « QCM : Que signifie PVC ? »), en titre ou précédée de <code>##</code>. Cochez les bonnes réponses avec <code>[x]</code>. Les activités sur image ne peuvent pas être importées.</p>
+    <div class="row"><label class="btn sm">${ico("download")} Choisir un fichier<input type="file" accept=".md,.markdown,.txt,.docx,.pdf,text/markdown,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" id="mdFile" hidden></label><button class="btn sm" data-act="mdTemplate">Insérer le modèle</button><button class="btn sm ghost" data-act="mdSaveTemplate">Télécharger le modèle</button></div>
+    <div class="imp-grid"><textarea class="inp mono" id="mdIn" rows="16" placeholder="## QCM : Votre question ?\n- [x] Bonne réponse\n- [ ] Autre réponse"></textarea><div class="imp-prev" id="mdPrev"><p class="muted small">L'aperçu des activités s'affiche ici.</p></div></div>
+    <div class="row"><span class="grow small muted" id="mdCount"></span><button class="btn pri" data-act="mdImport" disabled>Ajouter au projet</button></div>
+  </div></div>`;
+  const ta = $("#mdIn"); ta.addEventListener("input", previewMd);
+  $("#mdFile").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return; $("#mdCount").textContent = "Lecture de « " + f.name + " »…";
+    try { ta.value = await readImportFile(f); previewMd(); } catch (err) { console.error(err); $("#mdCount").textContent = ""; $("#mdPrev").innerHTML = `<div class="banner" style="background:var(--bad-soft);color:var(--bad)">${esc(err.message || "Fichier illisible.")}</div>`; } });
+}
+function previewMd(){
+  const res = parseMd($("#mdIn").value); const pv = $("#mdPrev"), btn = $('[data-act="mdImport"]');
+  pv.innerHTML = (res.title ? `<p class="small"><b>Titre :</b> ${esc(res.title)}</p>` : "") + (res.qs.map((q, k) => `<div class="imp-item"><span class="hexico g-${TYPES[q.type].g}">${ico(q.type)}</span><div><span class="eyebrow">${k + 1}. ${TYPES[q.type].label}</span><div>${esc(q.title)}</div></div></div>`).join("") || `<p class="muted small">Aucune activité reconnue pour l'instant.</p>`) + (res.warn.length ? `<div class="banner" style="margin-top:8px">${res.warn.map(esc).join("<br>")}</div>` : "");
+  $("#mdCount").textContent = res.qs.length ? `${res.qs.length} activité${res.qs.length > 1 ? "s" : ""} prête${res.qs.length > 1 ? "s" : ""} à ajouter` : "";
+  btn.disabled = !res.qs.length;
+}
+async function saveTemplateFile(){
+  const name = "modele-la-ruche.md";
+  if (Store.downloads) { try { await Store.downloads.save({filename: name, data: MD_TEMPLATE}); return; } catch (e) { if (e && e.code === "dismissed") return; } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([MD_TEMPLATE], {type: "text/markdown"})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 3000);
+}
 /* ---------- hosted version: answers live under each session ---------- */
 const fbAns = {subs:{}, docs:{}, cb:null,
   watch(cb){ this.cb = cb; this.sync(); return () => {}; },
@@ -1335,9 +1572,9 @@ function drawEditor(){
         <label class="chk"><input type="checkbox" id="s_open" data-s="open" ${d.open !== false ? "checked" : ""}> Séance ouverte aux nouveaux participants</label>
       </div>
       <div class="card"><div class="qlist" role="list">${d.qs.map((q, i) => `<button class="qitem ${i === Ed.sel ? "sel" : ""}" data-act="selQ" data-i="${i}" role="listitem"><span class="num">${i + 1}</span><span class="hexico">${ico(q.type)}</span><span class="t">${esc(q.title || TYPES[q.type].label)}</span></button>`).join("") || `<p class="muted small" style="padding:8px">Aucune activité.</p>`}</div>
-        <div style="padding:8px;border-top:1px solid var(--line)" class="row"><button class="btn sm pri grow" data-act="openAdd">${ico("plus")} Ajouter une activité</button></div></div>
+        <div style="padding:8px;border-top:1px solid var(--line)" class="row"><button class="btn sm pri grow" data-act="openAdd">${ico("plus")} Ajouter une activité</button><button class="btn sm grow" data-act="openImport" title="Créer des activités à partir d'un texte ou d'un fichier Markdown">${ico("download")} Importer</button></div></div>
     </aside>
-    <section class="qform">${d.qs.length ? qForm(curQ(), Ed.sel) : `<div class="card pad stack"><span class="eyebrow">Projet vide</span><h2>Choisissez la première activité</h2>${hiveHTML("add")}</div>`}</section>
+    <section class="qform">${d.qs.length ? qForm(curQ(), Ed.sel) : `<div class="card pad stack"><span class="eyebrow">Projet vide</span><h2>Choisissez la première activité</h2><p class="muted">ou <button class="linkish" style="color:var(--honey-ink)" data-act="openImport">importez vos questions depuis un texte ou un fichier Markdown</button></p>${hiveHTML("add")}</div>`}</section>
   </div>`;
 }
 function qForm(q, i){
@@ -1747,6 +1984,10 @@ document.addEventListener("click", async e => {
     switch(act){
       case "selQ": Ed.sel = Number(el.dataset.i); return drawEditor();
       case "openAdd": return openAddMenu();
+      case "openImport": return openImport();
+      case "mdTemplate": $("#mdIn").value = MD_TEMPLATE; return previewMd();
+      case "mdSaveTemplate": return saveTemplateFile();
+      case "mdImport": { const res = parseMd($("#mdIn").value); if (!res.qs.length) return; const start = d.qs.length; d.qs.push(...res.qs.map(normalizeQuestion)); if (res.title && /^(Nouveau projet|Nouvelle séance)$/.test(d.title || "")) d.title = res.title; Ed.sel = start; $("#overlayRoot").innerHTML = ""; dirty(); drawEditor(); return toast(`${res.qs.length} activité${res.qs.length > 1 ? "s ajoutées" : " ajoutée"}. Relisez-les avant de présenter.`); }
       case "addType": { const nq = newQuestion(el.dataset.t); d.qs.splice(Ed.sel + 1, 0, nq); Ed.sel = d.qs.length === 1 ? 0 : Ed.sel + 1; $("#overlayRoot").innerHTML = ""; dirty(); return drawEditor(); }
       case "mvQ": { const j = Ed.sel + Number(el.dataset.d); if (j < 0 || j >= d.qs.length) return; [d.qs[Ed.sel], d.qs[j]] = [d.qs[j], d.qs[Ed.sel]]; Ed.sel = j; dirty(); return drawEditor(); }
       case "dupQ": { const c = clone(q); c.id = rid(8); d.qs.splice(Ed.sel + 1, 0, c); Ed.sel++; dirty(); return drawEditor(); }
